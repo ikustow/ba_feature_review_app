@@ -8,7 +8,9 @@
     "user_story": 4,
     "acceptance_criteria": 4,
     "incident_note": 3,
-    "total_documents": 11
+    "uml_diagram": 4,
+    "total_documents": 11,
+    "total_artifacts": 15
   },
   "documents": [
     {
@@ -16,28 +18,32 @@
       "artifact_type": "user_story",
       "path": "user_stories/us_pet_lifecycle_management.md",
       "domain": "pet",
-      "related_openapi_operations": ["addPet", "updatePet", "getPetById", "findPetsByStatus", "deletePet"]
+      "related_openapi_operations": ["addPet", "updatePet", "getPetById", "findPetsByStatus", "deletePet"],
+      "related_diagrams": ["diag_pet_lifecycle_sequence_v1"]
     },
     {
       "document_id": "us_store_order_checkout_v1",
       "artifact_type": "user_story",
       "path": "user_stories/us_store_order_checkout.md",
       "domain": "store",
-      "related_openapi_operations": ["placeOrder", "getOrderById", "deleteOrder", "getInventory"]
+      "related_openapi_operations": ["placeOrder", "getOrderById", "deleteOrder", "getInventory"],
+      "related_diagrams": ["diag_store_order_checkout_sequence_v1"]
     },
     {
       "document_id": "us_user_account_access_v1",
       "artifact_type": "user_story",
       "path": "user_stories/us_user_account_access.md",
       "domain": "user",
-      "related_openapi_operations": ["createUser", "createUsersWithListInput", "loginUser", "logoutUser", "getUserByName", "updateUser", "deleteUser"]
+      "related_openapi_operations": ["createUser", "createUsersWithListInput", "loginUser", "logoutUser", "getUserByName", "updateUser", "deleteUser"],
+      "related_diagrams": ["diag_user_account_access_sequence_v1"]
     },
     {
       "document_id": "us_pet_image_upload_v1",
       "artifact_type": "user_story",
       "path": "user_stories/us_pet_image_upload.md",
       "domain": "pet",
-      "related_openapi_operations": ["uploadFile", "getPetById", "updatePet"]
+      "related_openapi_operations": ["uploadFile", "getPetById", "updatePet"],
+      "related_diagrams": ["diag_pet_image_upload_sequence_v1"]
     },
     {
       "document_id": "ac_pet_lifecycle_management_v1",
@@ -87,7 +93,42 @@
       "path": "incidents/inc_login_header_contract_regression.md",
       "domain": "user",
       "related_openapi_operations": ["loginUser", "logoutUser"]
+    },
+    {
+      "diagram_id": "diag_pet_lifecycle_sequence_v1",
+      "artifact_type": "uml_diagram",
+      "diagram_type": "sequence",
+      "title": "Pet Lifecycle Management Sequence",
+      "path": "diagrams/pet_lifecycle_sequence.puml",
+      "domain": "pet",
+      "related_openapi_operations": ["addPet", "updatePet", "getPetById", "findPetsByStatus", "deletePet"]
+    },
+    {
+      "diagram_id": "diag_store_order_checkout_sequence_v1",
+      "artifact_type": "uml_diagram",
+      "diagram_type": "sequence",
+      "title": "Store Order Checkout Sequence",
+      "path": "diagrams/store_order_checkout_sequence.puml",
+      "domain": "store",
+      "related_openapi_operations": ["placeOrder", "getOrderById", "deleteOrder", "getInventory"]
+    },
+    {
+      "diagram_id": "diag_user_account_access_sequence_v1",
+      "artifact_type": "uml_diagram",
+      "diagram_type": "sequence",
+      "title": "User Account Access Sequence",
+      "path": "diagrams/user_account_access_sequence.puml",
+      "domain": "user",
+      "related_openapi_operations": ["createUser", "createUsersWithListInput", "loginUser", "logoutUser", "getUserByName", "updateUser", "deleteUser"]
+    },
+    {
+      "diagram_id": "diag_pet_image_upload_sequence_v1",
+      "artifact_type": "uml_diagram",
+      "diagram_type": "sequence",
+      "title": "Pet Image Upload Sequence",
+      "path": "diagrams/pet_image_upload_sequence.puml",
+      "domain": "pet",
+      "related_openapi_operations": ["uploadFile", "getPetById", "updatePet"]
     }
   ]
 }
-
