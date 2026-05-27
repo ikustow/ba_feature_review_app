@@ -6,3 +6,9 @@ PRD/
 **/.pytest_cache/
 __pycache__/
 **/__pycache__/
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+coverage/
+**/coverage/
