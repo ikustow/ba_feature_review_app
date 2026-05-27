@@ -1,5 +1,7 @@
 import { RESOURCE_MIME_TYPE, registerAppResource } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 export const FEATURE_REVIEW_WORKSPACE_URI = "ui://widget/feature-review-workspace-v1.html";
 
@@ -28,7 +30,7 @@ export function registerFeatureReviewWorkspaceResource(server: McpServer): void 
         {
           uri: FEATURE_REVIEW_WORKSPACE_URI,
           mimeType: RESOURCE_MIME_TYPE,
-          text: workspaceHtml,
+          text: loadFeatureReviewWorkspaceHtml(),
           _meta: {
             ui: {
               csp: {
@@ -46,7 +48,27 @@ export function registerFeatureReviewWorkspaceResource(server: McpServer): void 
   );
 }
 
-const workspaceHtml = `
+export function loadFeatureReviewWorkspaceHtml(
+  env: NodeJS.ProcessEnv = process.env,
+  cwd = process.cwd(),
+): string {
+  const candidates = [
+    env.FEATURE_REVIEW_WIDGET_HTML,
+    path.resolve(cwd, "../widget/dist/widget.html"),
+    path.resolve(cwd, "../../apps/widget/dist/widget.html"),
+    path.resolve(cwd, "apps/widget/dist/widget.html"),
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return readFileSync(candidate, "utf8");
+    }
+  }
+
+  return fallbackWorkspaceHtml;
+}
+
+const fallbackWorkspaceHtml = `
 <main id="root" style="font-family: system-ui, sans-serif; padding: 16px; color: #111827;">
   <h1 style="font-size: 18px; margin: 0 0 8px;">Feature Review Workspace</h1>
   <p id="summary" style="margin: 0 0 12px; color: #4b5563;">Waiting for feature review data.</p>
