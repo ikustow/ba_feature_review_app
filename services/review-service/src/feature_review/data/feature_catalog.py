@@ -14,6 +14,8 @@ from feature_review.models import (
     ManifestEntry,
     ProductDoc,
 )
+from feature_review.openapi.parser import default_openapi_path, load_openapi_spec
+from feature_review.openapi.slicer import OpenAPISlicer
 
 
 class FeatureCatalogError(ValueError):
@@ -21,9 +23,15 @@ class FeatureCatalogError(ValueError):
 
 
 class FeatureCatalog:
-    def __init__(self, manifest: DatasetManifest, product_docs_root: Path):
+    def __init__(
+        self,
+        manifest: DatasetManifest,
+        product_docs_root: Path,
+        openapi_slicer: OpenAPISlicer | None = None,
+    ):
         self.manifest = manifest
         self.product_docs_root = product_docs_root
+        self.openapi_slicer = openapi_slicer
         self._docs_by_id = self._load_product_docs()
         self._entries_by_id = {entry.artifact_id: entry for entry in manifest.documents}
 
@@ -31,12 +39,24 @@ class FeatureCatalog:
     def from_raw_data(cls, repo_root: Path | str | None = None) -> "FeatureCatalog":
         root = Path(repo_root) if repo_root is not None else None
         manifest = load_manifest(manifest_path(root))
-        return cls(manifest=manifest, product_docs_root=product_docs_dir(root))
+        openapi_slicer = OpenAPISlicer(load_openapi_spec(default_openapi_path(root)))
+        return cls(
+            manifest=manifest,
+            product_docs_root=product_docs_dir(root),
+            openapi_slicer=openapi_slicer,
+        )
 
     @classmethod
     def from_manifest_path(cls, path: Path | str) -> "FeatureCatalog":
         manifest = load_manifest(path)
-        return cls(manifest=manifest, product_docs_root=Path(path).parent)
+        manifest_file = Path(path)
+        spec_path = manifest_file.parent.parent / "openapi.yaml"
+        openapi_slicer = OpenAPISlicer(load_openapi_spec(spec_path)) if spec_path.exists() else None
+        return cls(
+            manifest=manifest,
+            product_docs_root=manifest_file.parent,
+            openapi_slicer=openapi_slicer,
+        )
 
     def list_features(self) -> list[FeatureSummary]:
         return [self._summary_for_story(story) for story in self._user_stories()]
@@ -57,6 +77,8 @@ class FeatureCatalog:
             user_story=user_story,
             acceptance_criteria=self._acceptance_criteria_for(user_story.document_id),
             incidents=self._incidents_for(user_story),
+            openapi_operations=self._openapi_operations_for(user_story),
+            related_schemas=self._related_schemas_for(user_story),
             diagrams=self._diagrams_for(user_story),
         )
 
@@ -117,6 +139,16 @@ class FeatureCatalog:
                 raise FeatureCatalogError(f"Unknown related diagram id {diagram_id!r} for {story.document_id}")
             diagrams.append(_diagram_from_manifest(entry, story.document_id))
         return diagrams
+
+    def _openapi_operations_for(self, story: ProductDoc):
+        if self.openapi_slicer is None:
+            return []
+        return self.openapi_slicer.slice_operations(story.related_openapi_operations)
+
+    def _related_schemas_for(self, story: ProductDoc) -> list[dict]:
+        if self.openapi_slicer is None:
+            return []
+        return self.openapi_slicer.related_schemas_for_operations(story.related_openapi_operations)
 
 
 def feature_title(document_title: str) -> str:
