@@ -1,0 +1,93 @@
+{
+  "dataset_id": "petstore_synthetic_product_docs_v1",
+  "language": "en",
+  "source_type": "synthetic_public_safe",
+  "base_api_spec": "raw_data/openapi.yaml",
+  "description": "Synthetic product documentation linked to Swagger Petstore OpenAPI operations, schemas, paths, and security schemes.",
+  "counts": {
+    "user_story": 4,
+    "acceptance_criteria": 4,
+    "incident_note": 3,
+    "total_documents": 11
+  },
+  "documents": [
+    {
+      "document_id": "us_pet_lifecycle_management_v1",
+      "artifact_type": "user_story",
+      "path": "user_stories/us_pet_lifecycle_management.md",
+      "domain": "pet",
+      "related_openapi_operations": ["addPet", "updatePet", "getPetById", "findPetsByStatus", "deletePet"]
+    },
+    {
+      "document_id": "us_store_order_checkout_v1",
+      "artifact_type": "user_story",
+      "path": "user_stories/us_store_order_checkout.md",
+      "domain": "store",
+      "related_openapi_operations": ["placeOrder", "getOrderById", "deleteOrder", "getInventory"]
+    },
+    {
+      "document_id": "us_user_account_access_v1",
+      "artifact_type": "user_story",
+      "path": "user_stories/us_user_account_access.md",
+      "domain": "user",
+      "related_openapi_operations": ["createUser", "createUsersWithListInput", "loginUser", "logoutUser", "getUserByName", "updateUser", "deleteUser"]
+    },
+    {
+      "document_id": "us_pet_image_upload_v1",
+      "artifact_type": "user_story",
+      "path": "user_stories/us_pet_image_upload.md",
+      "domain": "pet",
+      "related_openapi_operations": ["uploadFile", "getPetById", "updatePet"]
+    },
+    {
+      "document_id": "ac_pet_lifecycle_management_v1",
+      "artifact_type": "acceptance_criteria",
+      "path": "acceptance_criteria/ac_pet_lifecycle_management.md",
+      "domain": "pet",
+      "related_user_story": "us_pet_lifecycle_management_v1"
+    },
+    {
+      "document_id": "ac_store_order_checkout_v1",
+      "artifact_type": "acceptance_criteria",
+      "path": "acceptance_criteria/ac_store_order_checkout.md",
+      "domain": "store",
+      "related_user_story": "us_store_order_checkout_v1"
+    },
+    {
+      "document_id": "ac_user_account_access_v1",
+      "artifact_type": "acceptance_criteria",
+      "path": "acceptance_criteria/ac_user_account_access.md",
+      "domain": "user",
+      "related_user_story": "us_user_account_access_v1"
+    },
+    {
+      "document_id": "ac_pet_image_upload_v1",
+      "artifact_type": "acceptance_criteria",
+      "path": "acceptance_criteria/ac_pet_image_upload.md",
+      "domain": "pet",
+      "related_user_story": "us_pet_image_upload_v1"
+    },
+    {
+      "document_id": "inc_pet_status_filter_mismatch_v1",
+      "artifact_type": "incident_note",
+      "path": "incidents/inc_pet_status_filter_mismatch.md",
+      "domain": "pet",
+      "related_openapi_operations": ["findPetsByStatus", "updatePet"]
+    },
+    {
+      "document_id": "inc_order_id_boundary_confusion_v1",
+      "artifact_type": "incident_note",
+      "path": "incidents/inc_order_id_boundary_confusion.md",
+      "domain": "store",
+      "related_openapi_operations": ["getOrderById", "deleteOrder"]
+    },
+    {
+      "document_id": "inc_login_header_contract_regression_v1",
+      "artifact_type": "incident_note",
+      "path": "incidents/inc_login_header_contract_regression.md",
+      "domain": "user",
+      "related_openapi_operations": ["loginUser", "logoutUser"]
+    }
+  ]
+}
+
