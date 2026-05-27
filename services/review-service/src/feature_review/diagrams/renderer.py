@@ -27,9 +27,12 @@ def render_plantuml_svg(
     if plantuml_binary:
         rendered = _render_with_plantuml_cli(plantuml_binary, source)
         if rendered:
+            _save_cached_svg(cache_path, rendered)
             return rendered
 
-    return _fallback_svg(title=title, steps=steps)
+    rendered = _fallback_svg(title=title, steps=steps)
+    _save_cached_svg(cache_path, rendered)
+    return rendered
 
 
 def _load_cached_svg(cache_path: Path | str | None) -> str | None:
@@ -42,6 +45,18 @@ def _load_cached_svg(cache_path: Path | str | None) -> str | None:
 
     svg = svg_path.read_text(encoding="utf-8")
     return svg if svg.lstrip().startswith("<svg") else None
+
+
+def _save_cached_svg(cache_path: Path | str | None, svg: str) -> None:
+    if cache_path is None:
+        return
+
+    svg_path = Path(cache_path)
+    try:
+        svg_path.parent.mkdir(parents=True, exist_ok=True)
+        svg_path.write_text(svg, encoding="utf-8")
+    except OSError:
+        return
 
 
 def _render_with_plantuml_cli(plantuml_binary: str, source: str) -> str | None:
