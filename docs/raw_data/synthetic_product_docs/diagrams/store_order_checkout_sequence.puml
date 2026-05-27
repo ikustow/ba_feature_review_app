@@ -1,0 +1,33 @@
+@startuml
+title Store Order Checkout Sequence
+
+actor "Store Customer" as Customer
+participant "Checkout Workspace" as Workspace
+participant "Store API" as StoreAPI
+database "Order Store" as Orders
+database "Inventory" as Inventory
+
+Customer -> Workspace: Review inventory before checkout
+' operationId: getInventory
+Workspace -> StoreAPI: GET /store/inventory
+StoreAPI -> Inventory: Read inventory counts
+StoreAPI --> Workspace: Status quantity map
+
+Customer -> Workspace: Submit order
+' operationId: placeOrder
+Workspace -> StoreAPI: POST /store/order
+StoreAPI -> Orders: Persist Order
+StoreAPI --> Workspace: Order created
+
+Customer -> Workspace: Confirm order state
+' operationId: getOrderById
+Workspace -> StoreAPI: GET /store/order/{orderId}
+StoreAPI -> Orders: Lookup Order
+StoreAPI --> Workspace: Order details
+
+Customer -> Workspace: Cancel invalid order
+' operationId: deleteOrder
+Workspace -> StoreAPI: DELETE /store/order/{orderId}
+StoreAPI -> Orders: Delete Order
+StoreAPI --> Workspace: Order deleted
+@enduml

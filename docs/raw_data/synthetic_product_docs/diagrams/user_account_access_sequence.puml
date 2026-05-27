@@ -1,0 +1,48 @@
+@startuml
+title User Account Access Sequence
+
+actor "Store User" as User
+participant "Account Workspace" as Workspace
+participant "User API" as UserAPI
+database "User Store" as Users
+
+User -> Workspace: Create account
+' operationId: createUser
+Workspace -> UserAPI: POST /user
+UserAPI -> Users: Persist User
+UserAPI --> Workspace: User created
+
+User -> Workspace: Bulk create test users
+' operationId: createUsersWithListInput
+Workspace -> UserAPI: POST /user/createWithList
+UserAPI -> Users: Persist User list
+UserAPI --> Workspace: Users created
+
+User -> Workspace: Log in
+' operationId: loginUser
+Workspace -> UserAPI: GET /user/login
+UserAPI --> Workspace: Session body and headers
+
+User -> Workspace: Open profile
+' operationId: getUserByName
+Workspace -> UserAPI: GET /user/{username}
+UserAPI -> Users: Read User
+UserAPI --> Workspace: User details
+
+User -> Workspace: Update profile
+' operationId: updateUser
+Workspace -> UserAPI: PUT /user/{username}
+UserAPI -> Users: Save User changes
+UserAPI --> Workspace: Profile updated
+
+User -> Workspace: Log out
+' operationId: logoutUser
+Workspace -> UserAPI: GET /user/logout
+UserAPI --> Workspace: Session ended
+
+User -> Workspace: Delete account
+' operationId: deleteUser
+Workspace -> UserAPI: DELETE /user/{username}
+UserAPI -> Users: Delete User
+UserAPI --> Workspace: User deleted
+@enduml

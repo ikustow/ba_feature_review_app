@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from feature_review.data.diagram_loader import DiagramLoader
 from feature_review.data.manifest_loader import load_manifest
 from feature_review.data.markdown_loader import load_product_doc
 from feature_review.data.paths import manifest_path, product_docs_dir
@@ -11,7 +12,7 @@ from feature_review.models import (
     FeatureContext,
     FeatureDiagram,
     FeatureSummary,
-    ManifestEntry,
+    OpenAPIOperationSlice,
     ProductDoc,
 )
 from feature_review.openapi.parser import default_openapi_path, load_openapi_spec
@@ -28,10 +29,15 @@ class FeatureCatalog:
         manifest: DatasetManifest,
         product_docs_root: Path,
         openapi_slicer: OpenAPISlicer | None = None,
+        diagram_loader: DiagramLoader | None = None,
     ):
         self.manifest = manifest
         self.product_docs_root = product_docs_root
         self.openapi_slicer = openapi_slicer
+        self.diagram_loader = diagram_loader or DiagramLoader(
+            product_docs_root,
+            operation_index=openapi_slicer.index if openapi_slicer else None,
+        )
         self._docs_by_id = self._load_product_docs()
         self._entries_by_id = {entry.artifact_id: entry for entry in manifest.documents}
 
@@ -44,6 +50,7 @@ class FeatureCatalog:
             manifest=manifest,
             product_docs_root=product_docs_dir(root),
             openapi_slicer=openapi_slicer,
+            diagram_loader=DiagramLoader(product_docs_dir(root), operation_index=openapi_slicer.index),
         )
 
     @classmethod
@@ -56,6 +63,10 @@ class FeatureCatalog:
             manifest=manifest,
             product_docs_root=manifest_file.parent,
             openapi_slicer=openapi_slicer,
+            diagram_loader=DiagramLoader(
+                manifest_file.parent,
+                operation_index=openapi_slicer.index if openapi_slicer else None,
+            ),
         )
 
     def list_features(self) -> list[FeatureSummary]:
@@ -100,7 +111,8 @@ class FeatureCatalog:
     def _summary_for_story(self, story: ProductDoc) -> FeatureSummary:
         acceptance_criteria = self._acceptance_criteria_for(story.document_id)
         incidents = self._incidents_for(story)
-        diagrams = self._diagrams_for(story)
+        story_entry = self._entries_by_id.get(story.document_id)
+        diagram_ids = story.related_diagrams or (story_entry.related_diagrams if story_entry else [])
         return FeatureSummary(
             feature_id=story.document_id,
             title=feature_title(story.title),
@@ -108,7 +120,7 @@ class FeatureCatalog:
             user_story_id=story.document_id,
             acceptance_criteria_id=acceptance_criteria.document_id if acceptance_criteria else None,
             related_operations_count=len(story.related_openapi_operations),
-            diagram_count=len(diagrams),
+            diagram_count=len(diagram_ids),
             incident_count=len(incidents),
         )
 
@@ -137,10 +149,10 @@ class FeatureCatalog:
             entry = self._entries_by_id.get(diagram_id)
             if entry is None or entry.artifact_type != "uml_diagram":
                 raise FeatureCatalogError(f"Unknown related diagram id {diagram_id!r} for {story.document_id}")
-            diagrams.append(_diagram_from_manifest(entry, story.document_id))
+            diagrams.append(self.diagram_loader.load_manifest_diagram(entry, story.document_id))
         return diagrams
 
-    def _openapi_operations_for(self, story: ProductDoc):
+    def _openapi_operations_for(self, story: ProductDoc) -> list[OpenAPIOperationSlice]:
         if self.openapi_slicer is None:
             return []
         return self.openapi_slicer.slice_operations(story.related_openapi_operations)
@@ -153,14 +165,3 @@ class FeatureCatalog:
 
 def feature_title(document_title: str) -> str:
     return re.sub(r"^(User Story|Acceptance Criteria|Incident Note):\s*", "", document_title).strip()
-
-
-def _diagram_from_manifest(entry: ManifestEntry, feature_id: str) -> FeatureDiagram:
-    return FeatureDiagram(
-        diagram_id=entry.artifact_id,
-        feature_id=feature_id,
-        title=entry.title or feature_title(entry.artifact_id.replace("_", " ").title()),
-        diagram_type=entry.diagram_type or "sequence",
-        related_operation_ids=entry.related_openapi_operations,
-        path=entry.path,
-    )

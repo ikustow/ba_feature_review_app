@@ -1,0 +1,27 @@
+@startuml
+title Pet Image Upload Sequence
+
+actor "Catalog Manager" as Manager
+participant "Feature Review Workspace" as Workspace
+participant "Pet API" as PetAPI
+database "Pet Catalog" as Catalog
+collections "Image Storage" as Images
+
+Manager -> Workspace: Select pet for image upload
+' operationId: getPetById
+Workspace -> PetAPI: GET /pet/{petId}
+PetAPI -> Catalog: Verify Pet exists
+PetAPI --> Workspace: Pet details
+
+Manager -> Workspace: Upload binary image with metadata
+' operationId: uploadFile
+Workspace -> PetAPI: POST /pet/{petId}/uploadImage
+PetAPI -> Images: Store image bytes
+PetAPI --> Workspace: ApiResponse confirmation
+
+Manager -> Workspace: Update pet visual metadata
+' operationId: updatePet
+Workspace -> PetAPI: PUT /pet
+PetAPI -> Catalog: Save photo URL or related Pet fields
+PetAPI --> Workspace: Updated Pet
+@enduml

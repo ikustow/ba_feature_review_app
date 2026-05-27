@@ -1,0 +1,36 @@
+@startuml
+title Pet Lifecycle Management Sequence
+
+actor "Catalog Manager" as Manager
+participant "Feature Review Workspace" as Workspace
+participant "Pet API" as PetAPI
+database "Pet Catalog" as Catalog
+
+Manager -> Workspace: Submit new pet details
+' operationId: addPet
+Workspace -> PetAPI: POST /pet create pet
+PetAPI -> Catalog: Persist Pet
+PetAPI --> Workspace: Pet created
+
+Manager -> Workspace: Update pet status or metadata
+' operationId: updatePet
+Workspace -> PetAPI: PUT /pet update pet
+PetAPI -> Catalog: Save changed Pet
+
+Manager -> Workspace: Inspect pet by id
+' operationId: getPetById
+Workspace -> PetAPI: GET /pet/{petId}
+PetAPI --> Workspace: Return Pet
+
+Manager -> Workspace: Filter catalog by status
+' operationId: findPetsByStatus
+Workspace -> PetAPI: GET /pet/findByStatus
+PetAPI -> Catalog: Query by Pet.status
+PetAPI --> Workspace: Matching pets
+
+Manager -> Workspace: Remove pet from catalog
+' operationId: deletePet
+Workspace -> PetAPI: DELETE /pet/{petId}
+PetAPI -> Catalog: Delete Pet
+PetAPI --> Workspace: Pet deleted
+@enduml
