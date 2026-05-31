@@ -225,15 +225,4 @@ curl http://127.0.0.1:2091/health
 - Quick tunnel URLs are ephemeral unless you configure a stable tunnel/domain.
 - Widget fullscreen behavior depends on the ChatGPT Apps host supporting `window.openai.requestDisplayMode`.
 
-## Portfolio Demo Script
 
-1. Open the ChatGPT App.
-2. Show the compact inline launcher.
-3. Open the fullscreen Feature Review Workspace.
-4. Select `Pet Lifecycle Management`.
-5. Show the rendered UML Feature Flow diagram.
-6. Click a diagram step and show the related OpenAPI endpoint.
-7. Open the OpenAPI tab and show only related operations.
-8. Open Consistency and show incident-linked regression findings.
-9. Ask ChatGPT: "What tests are missing?"
-10. Show the concise answer plus widget evidence.
