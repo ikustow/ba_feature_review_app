@@ -85,6 +85,7 @@ export const testGapOutputSchema = {
 
 export const renderWorkspaceOutputSchema = {
   workspace: z.record(z.unknown()),
+  features: z.array(z.record(z.unknown())).optional(),
 };
 
 export const searchOutputSchema = {

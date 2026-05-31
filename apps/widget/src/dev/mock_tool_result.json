@@ -1,0 +1,257 @@
+{
+  "structuredContent": {
+    "workspace": {
+      "template_uri": "ui://widget/feature-review-workspace-v6.html",
+      "view": "overview",
+      "feature_id": "us_pet_lifecycle_management_v1",
+      "feature_title": "Pet lifecycle management",
+      "feature_count": 1,
+      "finding_count": 3,
+      "status": "warnings"
+    },
+    "features": [
+      {
+        "feature_id": "us_pet_lifecycle_management_v1",
+        "title": "Pet lifecycle management",
+        "domain": "petstore",
+        "user_story_id": "US-PET-001",
+        "acceptance_criteria_id": "AC-PET-001",
+        "related_operations_count": 3,
+        "diagram_count": 1,
+        "incident_count": 1,
+        "review_status": "warnings"
+      }
+    ]
+  },
+  "_meta": {
+    "template_uri": "ui://widget/feature-review-workspace-v6.html",
+    "features": [
+      {
+        "feature_id": "us_pet_lifecycle_management_v1",
+        "title": "Pet lifecycle management",
+        "domain": "petstore",
+        "user_story_id": "US-PET-001",
+        "acceptance_criteria_id": "AC-PET-001",
+        "related_operations_count": 3,
+        "diagram_count": 1,
+        "incident_count": 1,
+        "review_status": "warnings"
+      }
+    ],
+    "context": {
+      "feature_id": "us_pet_lifecycle_management_v1",
+      "title": "Pet lifecycle management",
+      "domain": "petstore",
+      "user_story": {
+        "document_id": "US-PET-001",
+        "artifact_type": "user_story",
+        "title": "Manage pets through their lifecycle",
+        "domain": "petstore",
+        "status": "approved",
+        "version": "1.0",
+        "text": "As a store operator, I can create, update, find, and delete pets so the catalog reflects available inventory.",
+        "frontmatter": {
+          "owner": "Catalog operations",
+          "priority": "high",
+          "release": "MVP"
+        },
+        "related_openapi_operations": ["addPet", "updatePet", "deletePet"],
+        "related_diagrams": ["diag_pet_lifecycle_sequence_v1"],
+        "path": "docs/raw_data/synthetic_product_docs/user_stories/us_pet_lifecycle_management.md"
+      },
+      "acceptance_criteria": {
+        "document_id": "AC-PET-001",
+        "artifact_type": "acceptance_criteria",
+        "title": "Pet lifecycle acceptance criteria",
+        "domain": "petstore",
+        "status": "approved",
+        "version": "1.0",
+        "text": "Given a valid pet payload, when the operator creates or updates a pet, then the API persists the change and returns the current pet representation. Given an obsolete pet, when the operator deletes it, then the pet is no longer returned in inventory searches.",
+        "frontmatter": {
+          "coverage": "create-update-delete",
+          "test_status": "partial"
+        },
+        "related_openapi_operations": ["addPet", "updatePet", "deletePet"],
+        "related_diagrams": ["diag_pet_lifecycle_sequence_v1"],
+        "path": "docs/raw_data/synthetic_product_docs/acceptance_criteria/ac_pet_lifecycle_management.md"
+      },
+      "incidents": [
+        {
+          "document_id": "INC-PET-001",
+          "artifact_type": "incident_note",
+          "title": "Status filter mismatch after pet updates",
+          "domain": "petstore",
+          "status": "closed",
+          "version": "1.0",
+          "text": "A pet updated from available to sold was still visible in the available inventory filter for several minutes. The incident points to missing consistency checks between updatePet and search behavior.",
+          "frontmatter": {
+            "severity": "medium",
+            "suspected_root_cause": "status index lag",
+            "resolution": "added index refresh and regression monitoring"
+          },
+          "related_openapi_operations": ["updatePet", "findPetsByStatus"],
+          "related_user_story": "US-PET-001",
+          "path": "docs/raw_data/synthetic_product_docs/incidents/inc_pet_status_filter_mismatch.md"
+        }
+      ],
+      "openapi_operations": [
+        {
+          "operation_id": "addPet",
+          "method": "POST",
+          "path": "/pet",
+          "summary": "Add a new pet to the store",
+          "description": "Creates a pet resource from a Pet payload.",
+          "parameters": [],
+          "request_body": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Pet" }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Successful operation" },
+            "405": { "description": "Invalid input" }
+          },
+          "security": [{ "petstore_auth": ["write:pets", "read:pets"] }],
+          "tags": ["pet"],
+          "related_schema_names": ["Pet", "Category", "Tag"]
+        },
+        {
+          "operation_id": "updatePet",
+          "method": "PUT",
+          "path": "/pet",
+          "summary": "Update an existing pet",
+          "description": "Updates an existing pet resource using a full Pet payload.",
+          "parameters": [],
+          "request_body": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Pet" }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Successful operation" },
+            "400": { "description": "Invalid ID supplied" },
+            "404": { "description": "Pet not found" },
+            "405": { "description": "Validation exception" }
+          },
+          "security": [{ "petstore_auth": ["write:pets", "read:pets"] }],
+          "tags": ["pet"],
+          "related_schema_names": ["Pet", "Category", "Tag"]
+        },
+        {
+          "operation_id": "deletePet",
+          "method": "DELETE",
+          "path": "/pet/{petId}",
+          "summary": "Deletes a pet",
+          "description": "Deletes a pet by identifier.",
+          "parameters": [
+            { "name": "api_key", "in": "header", "required": false, "schema": { "type": "string" } },
+            { "name": "petId", "in": "path", "required": true, "schema": { "type": "integer", "format": "int64" } }
+          ],
+          "request_body": null,
+          "responses": {
+            "400": { "description": "Invalid pet value" }
+          },
+          "security": [{ "petstore_auth": ["write:pets", "read:pets"] }],
+          "tags": ["pet"],
+          "related_schema_names": []
+        }
+      ],
+      "related_schemas": [
+        {
+          "name": "Pet",
+          "type": "object",
+          "required": ["name", "photoUrls"],
+          "properties": {
+            "id": { "type": "integer", "format": "int64" },
+            "name": { "type": "string", "example": "doggie" },
+            "status": { "type": "string", "enum": ["available", "pending", "sold"] }
+          }
+        }
+      ],
+      "diagrams": [
+        {
+          "diagram_id": "diag_pet_lifecycle_sequence_v1",
+          "feature_id": "us_pet_lifecycle_management_v1",
+          "title": "Pet lifecycle sequence",
+          "diagram_type": "sequence",
+          "source": "@startuml\nactor Operator\nparticipant Widget\nparticipant PetAPI\nOperator -> Widget: Save pet changes\nWidget -> PetAPI: addPet / updatePet\nPetAPI --> Widget: Pet representation\nOperator -> Widget: Remove obsolete pet\nWidget -> PetAPI: deletePet\n@enduml",
+          "rendered_svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"680\" height=\"260\" viewBox=\"0 0 680 260\"><rect width=\"680\" height=\"260\" fill=\"#ffffff\"/><text x=\"28\" y=\"34\" font-family=\"Arial\" font-size=\"18\" font-weight=\"700\" fill=\"#172033\">Pet lifecycle sequence</text><line x1=\"92\" y1=\"68\" x2=\"92\" y2=\"222\" stroke=\"#8da0b6\" stroke-width=\"2\"/><line x1=\"332\" y1=\"68\" x2=\"332\" y2=\"222\" stroke=\"#8da0b6\" stroke-width=\"2\"/><line x1=\"572\" y1=\"68\" x2=\"572\" y2=\"222\" stroke=\"#8da0b6\" stroke-width=\"2\"/><rect x=\"38\" y=\"54\" width=\"108\" height=\"28\" rx=\"6\" fill=\"#e8f4f2\" stroke=\"#2f7f7b\"/><rect x=\"278\" y=\"54\" width=\"108\" height=\"28\" rx=\"6\" fill=\"#e7edf4\" stroke=\"#8da0b6\"/><rect x=\"518\" y=\"54\" width=\"108\" height=\"28\" rx=\"6\" fill=\"#fff7e3\" stroke=\"#d49b26\"/><text x=\"63\" y=\"73\" font-family=\"Arial\" font-size=\"13\" fill=\"#172033\">Operator</text><text x=\"313\" y=\"73\" font-family=\"Arial\" font-size=\"13\" fill=\"#172033\">Widget</text><text x=\"548\" y=\"73\" font-family=\"Arial\" font-size=\"13\" fill=\"#172033\">PetAPI</text><line x1=\"98\" y1=\"112\" x2=\"326\" y2=\"112\" stroke=\"#2f7f7b\" stroke-width=\"2\" marker-end=\"url(#arrow)\"/><line x1=\"338\" y1=\"148\" x2=\"566\" y2=\"148\" stroke=\"#2f7f7b\" stroke-width=\"2\" marker-end=\"url(#arrow)\"/><line x1=\"566\" y1=\"184\" x2=\"338\" y2=\"184\" stroke=\"#68778d\" stroke-width=\"2\" stroke-dasharray=\"5 4\" marker-end=\"url(#arrowGrey)\"/><line x1=\"338\" y1=\"216\" x2=\"566\" y2=\"216\" stroke=\"#a33a2b\" stroke-width=\"2\" marker-end=\"url(#arrowRed)\"/><text x=\"122\" y=\"104\" font-family=\"Arial\" font-size=\"12\" fill=\"#172033\">Save pet changes</text><text x=\"386\" y=\"140\" font-family=\"Arial\" font-size=\"12\" fill=\"#172033\">addPet / updatePet</text><text x=\"407\" y=\"176\" font-family=\"Arial\" font-size=\"12\" fill=\"#172033\">Pet representation</text><text x=\"424\" y=\"208\" font-family=\"Arial\" font-size=\"12\" fill=\"#172033\">deletePet</text><defs><marker id=\"arrow\" markerWidth=\"10\" markerHeight=\"8\" refX=\"9\" refY=\"4\" orient=\"auto\"><path d=\"M0,0 L10,4 L0,8 z\" fill=\"#2f7f7b\"/></marker><marker id=\"arrowGrey\" markerWidth=\"10\" markerHeight=\"8\" refX=\"9\" refY=\"4\" orient=\"auto\"><path d=\"M0,0 L10,4 L0,8 z\" fill=\"#68778d\"/></marker><marker id=\"arrowRed\" markerWidth=\"10\" markerHeight=\"8\" refX=\"9\" refY=\"4\" orient=\"auto\"><path d=\"M0,0 L10,4 L0,8 z\" fill=\"#a33a2b\"/></marker></defs></svg>",
+          "related_operation_ids": ["addPet", "updatePet", "deletePet"],
+          "steps": [
+            { "step_id": "S1", "label": "Save pet changes", "related_operation_id": "updatePet", "related_path": "/pet" },
+            { "step_id": "S2", "label": "Create new pet", "related_operation_id": "addPet", "related_path": "/pet" },
+            { "step_id": "S3", "label": "Remove obsolete pet", "related_operation_id": "deletePet", "related_path": "/pet/{petId}" }
+          ],
+          "path": "docs/raw_data/synthetic_product_docs/diagrams/pet_lifecycle_sequence.puml"
+        }
+      ]
+    },
+    "audit": {
+      "review_id": "local-dev-review-pet-lifecycle",
+      "feature_id": "us_pet_lifecycle_management_v1",
+      "overall_status": "warnings",
+      "findings": [
+        {
+          "finding_id": "finding-status-search-gap",
+          "severity": "medium",
+          "category": "incident_operation_coverage",
+          "title": "Incident references status search not covered by feature docs",
+          "description": "The incident mentions findPetsByStatus, but the feature story and acceptance criteria only cover addPet, updatePet, and deletePet.",
+          "evidence_refs": ["INC-PET-001", "US-PET-001", "AC-PET-001"],
+          "affected_operation_ids": ["findPetsByStatus", "updatePet"],
+          "recommended_action": "Add explicit status-search consistency coverage or link the incident to a separate inventory-search feature."
+        },
+        {
+          "finding_id": "finding-delete-response-gap",
+          "severity": "low",
+          "category": "openapi_acceptance_gap",
+          "title": "Delete success response is not described",
+          "description": "Acceptance criteria says deleted pets disappear from search, but does not document the expected delete response behavior.",
+          "evidence_refs": ["AC-PET-001", "deletePet"],
+          "affected_operation_ids": ["deletePet"],
+          "recommended_action": "Clarify expected delete response and follow-up verification behavior."
+        },
+        {
+          "finding_id": "finding-diagram-create-update-combined",
+          "severity": "low",
+          "category": "diagram_operation_mapping",
+          "title": "Diagram combines create and update operations",
+          "description": "The diagram uses one interaction for addPet and updatePet, which can hide divergent validation paths.",
+          "evidence_refs": ["diag_pet_lifecycle_sequence_v1", "addPet", "updatePet"],
+          "affected_operation_ids": ["addPet", "updatePet"],
+          "recommended_action": "Split create and update into separate steps if the review needs path-level traceability."
+        }
+      ],
+      "generated_test_ideas": [
+        {
+          "test_id": "test-update-status-search-regression",
+          "title": "Updated status is reflected in status search",
+          "type": "regression",
+          "related_operation_ids": ["updatePet", "findPetsByStatus"],
+          "given_when_then": "Given an available pet, when the operator updates its status to sold, then available search no longer returns the pet and sold search does.",
+          "rationale": "Covers the linked incident and validates cross-operation consistency."
+        },
+        {
+          "test_id": "test-delete-removes-from-inventory",
+          "title": "Deleted pet is absent from inventory lookup",
+          "type": "contract",
+          "related_operation_ids": ["deletePet"],
+          "given_when_then": "Given an existing pet, when the operator deletes it, then subsequent inventory lookup does not return it.",
+          "rationale": "Covers the acceptance criteria around obsolete pet removal."
+        }
+      ],
+      "recommended_next_actions": [
+        "Decide whether status-search consistency belongs to this feature or a separate inventory-search feature.",
+        "Document delete response expectations in acceptance criteria.",
+        "Split create/update diagram steps if reviewers need one operation per step."
+      ],
+      "model_context_hint": "Review status-search consistency before approving the pet lifecycle docs."
+    }
+  }
+}

@@ -143,6 +143,8 @@ export type ToolResult<TStructured = Record<string, unknown>> = {
   isError?: boolean;
 };
 
+export type DisplayMode = "inline" | "fullscreen" | "pip" | string;
+
 export type WidgetState = {
   selectedFeatureId?: string;
   activeView: ViewKey;
@@ -161,12 +163,14 @@ export type OpenAiBridge = {
   widgetState?: unknown;
   theme?: "light" | "dark";
   locale?: string;
-  displayMode?: string;
+  displayMode?: DisplayMode;
   callTool?: (name: string, args: Record<string, unknown>) => Promise<ToolResult>;
   sendFollowUpMessage?: (message: { prompt: string; scrollToBottom?: boolean }) => Promise<void> | void;
   setWidgetState?: (state: unknown) => void;
   notifyIntrinsicHeight?: (height: number) => void;
-  requestDisplayMode?: (mode: string) => Promise<void> | void;
+  requestDisplayMode?: (request: { mode: DisplayMode }) => Promise<void> | void;
+  requestModal?: (request?: { params?: Record<string, unknown>; template?: string }) => Promise<void> | void;
+  setOpenInAppUrl?: (request: { href: string }) => Promise<void> | void;
 };
 
 declare global {

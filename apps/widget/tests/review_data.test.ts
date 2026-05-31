@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildFindingPrompt,
   contextFromResult,
+  mergeWorkspaceData,
   sanitizeSvg,
   traceabilityRows,
   workspaceFromToolResult,
@@ -115,7 +116,7 @@ test("workspaceFromToolResult extracts render payload from structured content an
   const result: ToolResult = {
     structuredContent: {
       workspace: {
-        template_uri: "ui://widget/feature-review-workspace-v1.html",
+        template_uri: "ui://widget/feature-review-workspace-v6.html",
         view: "overview",
         feature_id: "checkout-payment",
         feature_title: "Checkout Payment",
@@ -162,6 +163,70 @@ test("contextFromResult reads full context from nested tool metadata", () => {
   };
 
   assert.equal(contextFromResult(result)?.feature_id, "checkout-payment");
+});
+
+test("workspaceFromToolResult can hydrate from structured render content without metadata", () => {
+  const result: ToolResult = {
+    structuredContent: {
+      workspace: {
+        template_uri: "ui://widget/feature-review-workspace-v6.html",
+        view: "features",
+        feature_id: "checkout-payment",
+        feature_title: "Checkout Payment",
+        feature_count: 1,
+        finding_count: 0,
+        status: "not_reviewed",
+      },
+      features: [
+        {
+          feature_id: "checkout-payment",
+          title: "Checkout Payment",
+          domain: "payments",
+          user_story_id: "US-PAY-001",
+          related_operations_count: 1,
+          diagram_count: 1,
+          incident_count: 1,
+        },
+      ],
+    },
+  };
+
+  const workspace = workspaceFromToolResult(result);
+
+  assert.equal(workspace.workspace?.feature_id, "checkout-payment");
+  assert.equal(workspace.features[0].title, "Checkout Payment");
+});
+
+test("contextFromResult falls back to structured content", () => {
+  const result: ToolResult = {
+    structuredContent: context,
+  };
+
+  assert.equal(contextFromResult(result)?.diagrams[0].diagram_id, "D-PAY-001");
+});
+
+test("mergeWorkspaceData preserves loaded data when a patch omits optional fields", () => {
+  const current = workspaceFromToolResult({
+    structuredContent: {
+      features: [
+        {
+          feature_id: "checkout-payment",
+          title: "Checkout Payment",
+          domain: "payments",
+          user_story_id: "US-PAY-001",
+          related_operations_count: 1,
+          diagram_count: 1,
+          incident_count: 1,
+        },
+      ],
+    },
+    _meta: { context },
+  });
+
+  const merged = mergeWorkspaceData(current, { features: [] });
+
+  assert.equal(merged.features.length, 1);
+  assert.equal(merged.context?.feature_id, "checkout-payment");
 });
 
 test("buildFindingPrompt includes evidence, operation ids, and recommended action", () => {

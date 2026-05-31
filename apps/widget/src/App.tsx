@@ -13,6 +13,7 @@ import {
   Layers,
   ListChecks,
   Loader2,
+  Maximize2,
   MessageSquareText,
   Network,
   PanelLeft,
@@ -26,9 +27,15 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCallTool } from "./hooks/use_call_tool.js";
+import { useOpenAiDisplayMode } from "./hooks/use_openai_display_mode.js";
 import { useToolResult } from "./hooks/use_tool_result.js";
 import { useWidgetState } from "./hooks/use_widget_state.js";
-import { notifyIntrinsicHeight, sendFollowUpMessage, updateModelContext } from "./lib/openai_bridge.js";
+import {
+  notifyIntrinsicHeight,
+  requestWorkspaceDisplayMode,
+  sendFollowUpMessage,
+  updateModelContext,
+} from "./lib/openai_bridge.js";
 import {
   auditFromResult,
   buildFindingPrompt,
@@ -84,8 +91,12 @@ export function App() {
   const incomingWorkspace = useMemo(() => workspaceFromToolResult(toolResult), [toolResult]);
   const [workspace, setWorkspace] = useState<ReviewWorkspaceData>(() => incomingWorkspace);
   const [widgetState, setWidgetState] = useWidgetState<WidgetState>(defaultWidgetState);
+  const displayMode = useOpenAiDisplayMode();
   const { callTool, loadingTool, error, clearError } = useCallTool();
   const [manualError, setManualError] = useState<string | null>(null);
+  const [workspaceLaunched, setWorkspaceLaunched] = useState(false);
+  const emptyPayloadBootstrapRef = useRef(false);
+  const contextHydrationRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!toolResult) return;
@@ -106,6 +117,42 @@ export function App() {
   }, [setWidgetState, widgetState.selectedFeatureId, workspace.context?.feature_id, workspace.features]);
 
   useEffect(() => {
+    if (toolResult || workspace.features.length > 0 || emptyPayloadBootstrapRef.current) return;
+    if (!window.openai?.callTool && window.parent === window) return;
+    emptyPayloadBootstrapRef.current = true;
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const featureResult = await callTool("list_features", {});
+          if (cancelled) return;
+
+          const featurePatch = workspaceFromToolResult(featureResult);
+          setWorkspace((current) => mergeWorkspaceData(current, featurePatch));
+
+          const firstFeatureId = featurePatch.features[0]?.feature_id;
+          if (firstFeatureId) {
+            setWidgetState((current) => ({
+              ...current,
+              selectedFeatureId: current.selectedFeatureId ?? firstFeatureId,
+            }));
+          }
+        } catch (cause) {
+          if (!cancelled) {
+            setManualError(cause instanceof Error ? cause.message : "Feature list failed to load.");
+          }
+        }
+      })();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [callTool, setWidgetState, toolResult, workspace.features.length]);
+
+  useEffect(() => {
     notifyIntrinsicHeight();
   }, [workspace, widgetState, loadingTool, error, manualError]);
 
@@ -117,8 +164,22 @@ export function App() {
   const selectedOperationId =
     widgetState.selectedOperationId ?? context?.openapi_operations[0]?.operation_id;
   const selectedDiagram = context?.diagrams[0];
+  const isHostedWidget = Boolean(window.openai) && window.parent !== window;
+  const isInlineDisplay = displayMode === "inline" || (!displayMode && isHostedWidget);
+  const showInlineLauncher = isHostedWidget && isInlineDisplay && !workspaceLaunched;
+
+  useEffect(() => {
+    if (!selectedFeatureId || workspace.features.length === 0) return;
+    if (!window.openai?.callTool && window.parent === window) return;
+    if (workspace.context?.feature_id === selectedFeatureId) return;
+    if (contextHydrationRef.current === selectedFeatureId) return;
+
+    contextHydrationRef.current = selectedFeatureId;
+    void loadFeature(selectedFeatureId, activeView);
+  }, [activeView, selectedFeatureId, workspace.context?.feature_id, workspace.features.length]);
 
   async function loadFeature(featureId: string, view: ViewKey = activeView) {
+    contextHydrationRef.current = featureId;
     setManualError(null);
     clearError();
     setWidgetState((current) => ({
@@ -182,7 +243,41 @@ export function App() {
       severity: finding.severity,
       affected_operation_ids: finding.affected_operation_ids,
     });
-    await sendFollowUpMessage(prompt);
+    await sendFollowUpMessage(prompt, { scrollToBottom: false });
+  }
+
+  async function openWorkspace(view: ViewKey = activeView, featureId = selectedFeatureId) {
+    setManualError(null);
+    clearError();
+    const displayRequest = requestWorkspaceDisplayMode("fullscreen").catch((cause) => {
+      setManualError(cause instanceof Error ? cause.message : "Fullscreen display request failed.");
+      return false;
+    });
+
+    setWorkspaceLaunched(true);
+
+    if (featureId && featureId !== selectedFeatureId) {
+      void loadFeature(featureId, view);
+    } else if (view !== activeView) {
+      setActiveView(view);
+    }
+
+    await displayRequest;
+  }
+
+  if (showInlineLauncher) {
+    return (
+      <InlineLauncher
+        audit={audit}
+        context={context}
+        error={manualError ?? error}
+        features={workspace.features}
+        loading={Boolean(loadingTool)}
+        selectedFeature={selectedFeature}
+        onOpenFeature={(featureId) => void openWorkspace("overview", featureId)}
+        onOpenWorkspace={() => void openWorkspace(activeView)}
+      />
+    );
   }
 
   return (
@@ -278,6 +373,85 @@ export function App() {
         </section>
       </main>
     </div>
+  );
+}
+
+function InlineLauncher({
+  audit,
+  context,
+  error,
+  features,
+  loading,
+  selectedFeature,
+  onOpenFeature,
+  onOpenWorkspace,
+}: {
+  audit?: FeatureAuditResult;
+  context?: FeatureContext;
+  error?: string | null;
+  features: FeatureSummary[];
+  loading: boolean;
+  selectedFeature?: FeatureSummary;
+  onOpenFeature: (featureId: string) => void;
+  onOpenWorkspace: () => void;
+}) {
+  const status = audit?.overall_status ?? selectedFeature?.review_status ?? "not_reviewed";
+  const featureTitle = context?.title ?? selectedFeature?.title ?? "Feature Review";
+  const featureDomain = context?.domain ?? selectedFeature?.domain ?? "Review";
+  const operationCount = context?.openapi_operations.length ?? selectedFeature?.related_operations_count ?? 0;
+  const diagramCount = context?.diagrams.length ?? selectedFeature?.diagram_count ?? 0;
+  const incidentCount = context?.incidents.length ?? selectedFeature?.incident_count ?? 0;
+  const findingCount = audit?.findings.length ?? 0;
+
+  return (
+    <main className="inline-launcher">
+      <header className="inline-launcher-header">
+        <div>
+          <div className="eyebrow">{featureDomain}</div>
+          <h1>{featureTitle}</h1>
+          <p>{features.length} features</p>
+        </div>
+        <div className={`status-pill status-${status}`}>
+          {loading ? <Loader2 className="spin" size={16} aria-label="Loading" /> : statusIcon(status)}
+          {statusLabel(status)}
+        </div>
+      </header>
+
+      {error ? (
+        <div className="error-strip">
+          <AlertTriangle size={16} />
+          <span>{error}</span>
+        </div>
+      ) : null}
+
+      <div className="inline-summary-grid">
+        <Metric label="Operations" value={operationCount} icon={Network} />
+        <Metric label="Diagrams" value={diagramCount} icon={Workflow} />
+        <Metric label="Incidents" value={incidentCount} icon={CircleAlert} />
+        <Metric label="Findings" value={findingCount} icon={ClipboardList} />
+      </div>
+
+      {features.length ? (
+        <div className="inline-feature-strip" aria-label="Features">
+          {features.slice(0, 4).map((feature) => (
+            <button
+              className={feature.feature_id === selectedFeature?.feature_id ? "inline-feature active" : "inline-feature"}
+              key={feature.feature_id}
+              onClick={() => onOpenFeature(feature.feature_id)}
+              type="button"
+            >
+              <span>{feature.title}</span>
+              <small>{feature.related_operations_count} ops</small>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      <button className="primary-action" onClick={onOpenWorkspace} type="button">
+        <Maximize2 size={17} />
+        <span>Open workspace</span>
+      </button>
+    </main>
   );
 }
 

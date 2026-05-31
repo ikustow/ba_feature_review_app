@@ -1,4 +1,5 @@
 import type { ToolResult } from "../types.js";
+import { callLocalDevTool, isLocalWidgetDev } from "./local_dev_fixture.js";
 
 let requestCounter = 0;
 
@@ -65,15 +66,24 @@ export async function callMcpTool(
   if (window.openai?.callTool) {
     return window.openai.callTool(name, args);
   }
+  if (isLocalWidgetDev()) {
+    return callLocalDevTool(name, args);
+  }
   return postJsonRpcRequest<ToolResult>("tools/call", {
     name,
     arguments: args,
   });
 }
 
-export async function sendFollowUpMessage(prompt: string): Promise<void> {
+export async function sendFollowUpMessage(
+  prompt: string,
+  options: { scrollToBottom?: boolean } = {},
+): Promise<void> {
   if (window.openai?.sendFollowUpMessage) {
-    await window.openai.sendFollowUpMessage({ prompt, scrollToBottom: true });
+    await window.openai.sendFollowUpMessage({
+      prompt,
+      scrollToBottom: options.scrollToBottom ?? true,
+    });
     return;
   }
   postJsonRpcNotification("ui/message", {
@@ -96,4 +106,10 @@ export async function updateModelContext(text: string, structuredContent?: Recor
 export function notifyIntrinsicHeight(): void {
   const height = Math.ceil(document.documentElement.getBoundingClientRect().height);
   window.openai?.notifyIntrinsicHeight?.(height);
+}
+
+export async function requestWorkspaceDisplayMode(mode: "fullscreen" | "pip"): Promise<boolean> {
+  if (!window.openai?.requestDisplayMode) return false;
+  await window.openai.requestDisplayMode({ mode });
+  return true;
 }

@@ -62,7 +62,9 @@ test("registers the feature review workspace as an MCP app resource", async () =
     },
   } as unknown as McpServer;
 
-  registerFeatureReviewWorkspaceResource(server);
+  registerFeatureReviewWorkspaceResource(server, {
+    publicBaseUrl: "https://review.example.test",
+  });
 
   assert.equal(resources.length, 1);
   assert.equal(resources[0].uri, FEATURE_REVIEW_WORKSPACE_URI);
@@ -79,8 +81,12 @@ test("registers the feature review workspace as an MCP app resource", async () =
       _meta: {
         ui: {
           csp: { connectDomains: string[]; resourceDomains: string[] };
+          domain: string;
           prefersBorder: boolean;
         };
+        "openai/widgetCSP": { connect_domains: string[]; resource_domains: string[] };
+        "openai/widgetDomain": string;
+        "openai/widgetPrefersBorder": boolean;
       };
     }>;
   };
@@ -91,5 +97,10 @@ test("registers the feature review workspace as an MCP app resource", async () =
   assert.match(content.text, /Feature Review Workspace/);
   assert.deepEqual(content._meta.ui.csp.connectDomains, []);
   assert.deepEqual(content._meta.ui.csp.resourceDomains, []);
+  assert.equal(content._meta.ui.domain, "https://review.example.test");
   assert.equal(content._meta.ui.prefersBorder, false);
+  assert.deepEqual(content._meta["openai/widgetCSP"].connect_domains, []);
+  assert.deepEqual(content._meta["openai/widgetCSP"].resource_domains, []);
+  assert.equal(content._meta["openai/widgetDomain"], "https://review.example.test");
+  assert.equal(content._meta["openai/widgetPrefersBorder"], false);
 });

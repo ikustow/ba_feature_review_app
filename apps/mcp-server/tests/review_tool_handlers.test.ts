@@ -44,13 +44,17 @@ test("render tool returns widget summary in structuredContent and workspace data
     feature_id: "checkout-payment",
     view: "diagram",
   });
-  const structured = result.structuredContent as { workspace: Record<string, unknown> };
+  const structured = result.structuredContent as {
+    workspace: Record<string, unknown>;
+    features: Array<{ feature_id: string }>;
+  };
   const meta = result._meta as Record<string, unknown>;
 
   assert.equal(structured.workspace.template_uri, FEATURE_REVIEW_WORKSPACE_URI);
   assert.equal(structured.workspace.view, "diagram");
   assert.equal(structured.workspace.feature_id, "checkout-payment");
   assert.equal(structured.workspace.finding_count, 1);
+  assert.equal(structured.features[0].feature_id, "checkout-payment");
   assert.ok(Array.isArray(meta.features));
   assert.equal((meta.context as { feature_id: string }).feature_id, "checkout-payment");
   assert.equal((meta.audit as { overall_status: string }).overall_status, "warnings");

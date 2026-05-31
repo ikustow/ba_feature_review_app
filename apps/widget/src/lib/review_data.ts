@@ -25,14 +25,15 @@ export const VIEW_KEYS: ViewKey[] = [
 ];
 
 export function workspaceFromToolResult(result?: ToolResult): ReviewWorkspaceData {
-  const structured = result?.structuredContent ?? {};
+  const structured = asRecord(result?.structuredContent);
   const meta = normalizeToolMeta(result?._meta);
+  const metaFeatures = asArray<FeatureSummary>(meta.features);
   return {
-    workspace: asWorkspaceSummary((structured as { workspace?: unknown }).workspace),
-    features: asArray<FeatureSummary>(meta.features),
-    context: asFeatureContext(meta.context),
-    audit: asFeatureAudit(meta.audit),
-    template_uri: asString(meta.template_uri),
+    workspace: asWorkspaceSummary(structured.workspace),
+    features: metaFeatures.length > 0 ? metaFeatures : asArray<FeatureSummary>(structured.features),
+    context: asFeatureContext(meta.context ?? meta.full_context ?? structured.context ?? structured.full_context ?? structured),
+    audit: asFeatureAudit(meta.audit ?? structured.audit),
+    template_uri: asString(meta.template_uri ?? structured.template_uri),
   };
 }
 
@@ -50,19 +51,23 @@ export function mergeWorkspaceData(
   patch: Partial<ReviewWorkspaceData>,
 ): ReviewWorkspaceData {
   return {
-    ...current,
-    ...patch,
-    features: patch.features ?? current.features,
+    workspace: patch.workspace ?? current.workspace,
+    features: patch.features && patch.features.length > 0 ? patch.features : current.features,
+    context: patch.context ?? current.context,
+    audit: patch.audit ?? current.audit,
+    template_uri: patch.template_uri ?? current.template_uri,
   };
 }
 
 export function contextFromResult(result: ToolResult): FeatureContext | undefined {
+  const structured = asRecord(result.structuredContent);
   const meta = normalizeToolMeta(result._meta);
-  return asFeatureContext(meta.full_context ?? meta.context);
+  return asFeatureContext(meta.full_context ?? meta.context ?? structured.full_context ?? structured.context ?? structured);
 }
 
 export function auditFromResult(result: ToolResult): FeatureAuditResult | undefined {
-  const audit = (result.structuredContent as { audit?: unknown } | undefined)?.audit ?? normalizeToolMeta(result._meta).audit;
+  const structured = asRecord(result.structuredContent);
+  const audit = structured.audit ?? normalizeToolMeta(result._meta).audit;
   return asFeatureAudit(audit);
 }
 
@@ -226,6 +231,10 @@ function asString(value: unknown): string | undefined {
 
 function asArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -2,10 +2,37 @@ import { RESOURCE_MIME_TYPE, registerAppResource } from "@modelcontextprotocol/e
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import type { McpServerConfig } from "../config.js";
 
-export const FEATURE_REVIEW_WORKSPACE_URI = "ui://widget/feature-review-workspace-v1.html";
+export const FEATURE_REVIEW_WORKSPACE_URI = "ui://widget/feature-review-workspace-v6.html";
 
-export function registerFeatureReviewWorkspaceResource(server: McpServer): void {
+const WIDGET_DESCRIPTION =
+  "Shows a read-only feature review workspace with docs, diagrams, OpenAPI operations, incidents, findings, and test gaps.";
+
+type WidgetResourceMeta = {
+  ui: {
+    csp: {
+      connectDomains: string[];
+      resourceDomains: string[];
+    };
+    domain: string;
+    prefersBorder: boolean;
+  };
+  "openai/widgetDescription": string;
+  "openai/widgetPrefersBorder": boolean;
+  "openai/widgetCSP": {
+    connect_domains: string[];
+    resource_domains: string[];
+  };
+  "openai/widgetDomain": string;
+};
+
+export function registerFeatureReviewWorkspaceResource(
+  server: McpServer,
+  config: Pick<McpServerConfig, "publicBaseUrl">,
+): void {
+  const widgetMeta = createWidgetResourceMeta(config.publicBaseUrl);
+
   registerAppResource(
     server,
     "Feature Review Workspace",
@@ -13,17 +40,7 @@ export function registerFeatureReviewWorkspaceResource(server: McpServer): void 
     {
       title: "Feature Review Workspace",
       description: "Read-only workspace for feature docs, OpenAPI slices, diagrams, and findings.",
-      _meta: {
-        ui: {
-          csp: {
-            connectDomains: [],
-            resourceDomains: [],
-          },
-          prefersBorder: false,
-        },
-        "openai/widgetDescription":
-          "Shows a read-only feature review workspace with docs, diagrams, OpenAPI operations, incidents, findings, and test gaps.",
-      },
+      _meta: widgetMeta,
     },
     async () => ({
       contents: [
@@ -31,21 +48,31 @@ export function registerFeatureReviewWorkspaceResource(server: McpServer): void 
           uri: FEATURE_REVIEW_WORKSPACE_URI,
           mimeType: RESOURCE_MIME_TYPE,
           text: loadFeatureReviewWorkspaceHtml(),
-          _meta: {
-            ui: {
-              csp: {
-                connectDomains: [],
-                resourceDomains: [],
-              },
-              prefersBorder: false,
-            },
-            "openai/widgetDescription":
-              "Shows a read-only feature review workspace with docs, diagrams, OpenAPI operations, incidents, findings, and test gaps.",
-          },
+          _meta: widgetMeta,
         },
       ],
     }),
   );
+}
+
+export function createWidgetResourceMeta(widgetDomain: string): WidgetResourceMeta {
+  return {
+    ui: {
+      csp: {
+        connectDomains: [],
+        resourceDomains: [],
+      },
+      domain: widgetDomain,
+      prefersBorder: false,
+    },
+    "openai/widgetDescription": WIDGET_DESCRIPTION,
+    "openai/widgetPrefersBorder": false,
+    "openai/widgetCSP": {
+      connect_domains: [],
+      resource_domains: [],
+    },
+    "openai/widgetDomain": widgetDomain,
+  };
 }
 
 export function loadFeatureReviewWorkspaceHtml(

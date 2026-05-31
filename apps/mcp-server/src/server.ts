@@ -23,7 +23,7 @@ export function createMcpServer(
     },
   );
 
-  registerFeatureReviewWorkspaceResource(server);
+  registerFeatureReviewWorkspaceResource(server, config);
   registerReviewTools(server, client, config);
   return server;
 }

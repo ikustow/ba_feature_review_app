@@ -111,7 +111,7 @@ export function createReviewToolHandlers(
         status: audit?.overall_status ?? "not_reviewed",
       };
       return jsonToolResult(
-        { workspace },
+        { workspace, features },
         "Rendering Feature Review Workspace.",
         {
           features,
